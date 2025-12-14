@@ -4,6 +4,7 @@ CREATE TABLE group_messages (
     sender_id INT NOT NULL,
     message_text TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(group_id) REFERENCES groups(id),
-    FOREIGN KEY(sender_id) REFERENCES users(id)
+    FOREIGN KEY(group_id) REFERENCES chat_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_group_created (group_id, created_at)
 );

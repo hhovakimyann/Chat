@@ -1,7 +1,8 @@
-CREATE TABLE groups (
+CREATE TABLE chat_groups (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(created_by) REFERENCES users(id)
+    FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_name(name)
 );
