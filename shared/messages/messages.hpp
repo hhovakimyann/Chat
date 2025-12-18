@@ -1,5 +1,5 @@
-#ifndef MESSAGE_HPP
-#define MESSAGE_HPP
+#ifndef MESSAGES_HPP
+#define MESSAGES_HPP
 
 #include <string>
 
@@ -9,4 +9,4 @@ struct Message {
     std::string timestamp;
 };
 
-#endif //MESSAGE_HPP
+#endif

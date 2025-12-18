@@ -90,12 +90,26 @@ std::vector<std::vector<std::string>> MySQLConnection::query(const std::string& 
 }
 
 std::string MySQLConnection::escape(const std::string& str) const {
-    if (!conn || !connected) return str;
-    char buffer[1024];
-    mysql_real_escape_string(conn, buffer, str.c_str(), str.length());
-    return std::string(buffer);
-}
+    if (!conn || !connected) {
+        std::cerr << "[ERROR] MySQL not connected for escape()" << std::endl;
+        return str;
+    }
+    if (str.empty()) {
+        return str;
+    }
+    
+    size_t buffer_size = str.length() * 2 + 1;
+    std::unique_ptr<char[]> buffer(new char[buffer_size]);
 
+    unsigned long escaped_len = mysql_real_escape_string(
+        conn, buffer.get(), str.c_str(), str.length());
+
+    if (escaped_len > str.length() * 2) {
+        std::cerr << "[ERROR] mysql_real_escape_string failed: " << mysql_error(conn) << std::endl;
+        return ""; 
+    }
+    return std::string(buffer.get(), escaped_len);
+}
 
 MYSQL* MySQLConnection::getConnection() const { return conn; }
 
