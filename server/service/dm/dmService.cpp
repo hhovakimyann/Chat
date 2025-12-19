@@ -120,19 +120,17 @@ std::vector<Message> DMService::getConversation(const std::string& username1, co
 }
 
 std::vector<std::string> DMService::getConversationPartners(const std::string& username) {
-    std::cout << "Stated DM Service Get COnversation Partenrs";
     auto id = getUserId(username);
     if(!id) return {};
 
-    std::cout << "Get USer id Successfuly" << std::endl;
 
     std::stringstream sql;
     sql << "SELECT DISTINCT u.username " 
-    << "FROM direct_message dm "
-    << "JOIN users u ON (u.id = dm.sender_id OR u.id = dm.receiver_id) "
-    << "WHERE (dm.sender_id = " << *id << " OR dm.receiver_id = " << *id << ") "
-    << "AND u.id != " << *id << " "
-    << "ORDER BY u.username";
+        << "FROM direct_message dm "
+        << "JOIN users u ON (u.id = dm.sender_id OR u.id = dm.receiver_id) "
+        << "WHERE (dm.sender_id = " << *id << " OR dm.receiver_id = " << *id << ") "
+        << "AND u.id != " << *id << " "
+        << "ORDER BY u.username";
     
     auto rows = db.query(sql.str());
     std::vector<std::string> partners;

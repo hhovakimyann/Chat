@@ -16,7 +16,6 @@ private:
 
 public:
     explicit DMController(std::unique_ptr<IDMService> ds);
-
     nlohmann::json checkUserExists(const nlohmann::json& req);
     nlohmann::json sendDM(const nlohmann::json& req);
     nlohmann::json getMessages(const nlohmann::json& req);

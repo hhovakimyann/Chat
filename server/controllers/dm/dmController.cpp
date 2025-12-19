@@ -121,13 +121,9 @@ nlohmann::json DMController::getMessages(const nlohmann::json &req) {
             {"messages", "Missing token or username"}
         };
     }
-    std::cout << "Contains With" << std::endl;
     std::string token = req["token"];
-    std::cout << "Check Token" << std::endl;
     std::string userWith = req["with"];
-    std::cout << "Check With" << std::endl;
     int limit = req.value("limit",50);
-    std::cout << "Check Limit" << std::endl;
 
     auto fromUsername = getUsernameFromToken(token);
     if(!fromUsername) {
@@ -156,12 +152,9 @@ nlohmann::json DMController::getMessages(const nlohmann::json &req) {
 
 
 nlohmann::json DMController::getConversations(const nlohmann::json& req) {
-    std::cout << "Start Get Conversation" << std::endl; 
     std::string token = req["token"];
-    std::cout << "Taked Token " << token << std::endl;
 
     auto fromUsername = getUsernameFromToken(token);
-    std::cout << "Username Taked" << std::endl;
 
     if(!fromUsername) {
         return {
@@ -169,21 +162,18 @@ nlohmann::json DMController::getConversations(const nlohmann::json& req) {
             {"message", "Invalid Token"}
         };
     }
-    std::cout << *fromUsername << std::endl;
     auto partners = dmService->getConversationPartners(*fromUsername);
     
-    std::cout << "Get partners" << std::endl;
+    nlohmann::json result = {
+        {"status", "success"},
+        {"conversation", nlohmann::json::array()}
+    };
 
-    nlohmann::json result;
-    result["status"] = "success";
-    result["conversations"] = nlohmann::json::array();
-    std::cout << "Status and Conversations created" << std::endl;
     for(const auto& partner : partners) {
         nlohmann::json conv;
         conv["username"] = partner;   
         result["conversations"].push_back(conv);
     }
-    std::cout << result << std::endl;
 
     return result;
 }
