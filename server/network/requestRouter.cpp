@@ -3,80 +3,120 @@
 RequestRouter::RequestRouter(AuthController& ac, DMController& dc, GroupController& gc) : authCtrl(ac), dmCtrl(dc), groupCtrl(gc) {
 
     // === AUTH === 
-    auth["login"] = [this](const nlohmann::json& req, int clientSocket) {
+    handlers["login"] = [this](const nlohmann::json& req, int clientSocket) -> nlohmann::json {
         std::cout << "Login Handler" << std::endl;
-    return authCtrl.login(req,clientSocket);
+        return authCtrl.login(req,clientSocket);
     };
 
-    auth["register"] = [this](const nlohmann::json& req, int clientSocket) {
+    handlers["register"] = [this](const nlohmann::json& req, int clientSocket)  -> nlohmann::json {
         std::cout << "Register Handler" << std::endl;
-
         return authCtrl.registerUser(req,clientSocket);
+    };
+
+    auto protectedHandler = [this](auto handlerFunc) -> Handler {
+        return [this, handlerFunc](const nlohmann::json& req, int clientSocket) -> nlohmann::json {
+            if(!req.contains("token")) {
+                return {
+                    {"success", "error"},
+                    {"message", "Invlaid Data"}
+                };
+            }
+            
+            std::string token = req["token"].get<std::string>();
+
+            try {
+                auto decode = JWT::decode(token);
+                if(!decode) {
+                    return {
+                        {"status", "error"},
+                        {"message", "Invlaide JWT"}
+                    };
+                }
+
+                auto expClaim = decode->get_payload_claim("exp");
+                long long exp = expClaim.as_integer();
+                auto now = std::chrono::duration_cast<std::chrono::seconds>(
+                    std::chrono::system_clock::now().time_since_epoch()
+                ).count();
+
+                if (now >= exp) {
+                    return {{"status", "error"}, {"message", "Token expired"}};
+                }
+                return handlerFunc(req);
+
+            }catch(const std::exception& e) {
+                std::cerr << "JWT Decode Execption" << std::endl;
+                return {
+                    {"status", "error"},
+                    {"message", "Invalide Token"}
+                };
+            }
+        };
     };
 
     // === DM === 
 
-    handlers["send_dm"] = [this](const nlohmann::json& req) {
+    handlers["send_dm"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Send Dm Handler" << std::endl;
 
         return dmCtrl.sendDM(req);
-    };
+    });
 
-    handlers["fetch_dm"] = [this](const nlohmann::json& req) {
+    handlers["fetch_dm"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Fetch Dm Handler" << std::endl;
         return dmCtrl.getMessages(req);
-    };
+    });
 
-    handlers["list_dm_conversations"] = [this] (const nlohmann::json& req) {
+    handlers["list_dm_conversations"] = protectedHandler([this] (const nlohmann::json& req) {
         std::cout << "List DM Conversations Handler" << std::endl;
         return dmCtrl.getConversations(req);
-    };
+    });
 
-    handlers["check_user_exists"] = [this](const nlohmann::json& req) {
+    handlers["check_user_exists"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Chech User Exists Handler" << std::endl;
         return dmCtrl.checkUserExists(req);
-    };
+    });
 
     // ==== GROUPS ==== 
-    handlers["list_groups"] = [this](const nlohmann::json& req) {
+    handlers["list_groups"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "List Groups Handler" << std::endl;
         return groupCtrl.getGroups(req);
-    };
+    });
 
-    handlers["create_group"] = [this](const nlohmann::json& req) {
+    handlers["create_group"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Create Group Handler" << std::endl;
 
         return groupCtrl.createGroup(req);
-    };
+    });
 
-    handlers["join_group"] = [this](const nlohmann::json& req) {
+    handlers["join_group"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Join Group Handler" << std::endl;
         return groupCtrl.joinGroup(req);
-    };
+    });
 
-    handlers["leave_group"] = [this](const nlohmann::json& req) {
+    handlers["leave_group"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Leave Group Handler" << std::endl;
         return groupCtrl.leaveGroup(req);
-    };
+    });
 
-    handlers["send_group_message"] = [this](const nlohmann::json& req) {
+    handlers["send_group_message"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Send Group Message Handler" << std::endl;
         return groupCtrl.sendGroupMessage(req);
-    };
+    });
 
-    handlers["fetch_group_messages"] = [this](const nlohmann::json& req) {
+    handlers["fetch_group_messages"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Fetch Group Messages Handler" << std::endl;
         return groupCtrl.getMessages(req);
-    };
+    });
 
-    handlers["get_group_members"] = [this](const nlohmann::json& req) {
+    handlers["get_group_members"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Get Group Handler" << std::endl;
         return groupCtrl.getMembers(req);
-    };
+    });
 
-    handlers["get_group_info"] = [this](const nlohmann::json& req) {
+    handlers["get_group_info"] = protectedHandler([this](const nlohmann::json& req) {
         return groupCtrl.getGroupInfo(req);
-    };
+    });
 }
 
 std::string RequestRouter::handle(const std::string& rawJson, int clientSocket) {
@@ -96,44 +136,13 @@ std::string RequestRouter::handle(const std::string& rawJson, int clientSocket) 
 
     std::cout << "Routing action: " << action << " (socket: " << clientSocket << ")" << std::endl;
 
-    if(action == "register" || action == "login") {
-        auto it = auth.find(action);
-        if (it == auth.end()) {
-            return nlohmann::json{{"status", "error"}, {"message", "Unknown action: " + action}}.dump();
-        }
-        try {
-            nlohmann::json response = it->second(req, clientSocket);
-            return response.dump();
-        } catch (const std::exception& e) {
-            std::cerr << "Handler error for action " << action << ": " << e.what() << std::endl;
-            return nlohmann::json{{"status", "error"}, {"message", "Server error"}}.dump();
-        }
-    }
-
-    if (!req.contains("token")) {
-        return nlohmann::json{
-            {"status", "error"},
-            {"message", "Missing token"}
-        }.dump();
-    }
-    
-    if (!validateToken(req["token"])) {
-        return nlohmann::json{
-            {"status", "error"},
-            {"message", "Invalid or expired token"}
-        }.dump();
-    }
-
     auto it = handlers.find(action);
     if (it == handlers.end()) {
-        return nlohmann::json{
-            {"status", "error"},
-            {"message", "Unknown action: " + action}
-        }.dump();
+        return nlohmann::json{{"status", "error"}, {"message", "Unknown action: " + action}}.dump();
     }
 
     try {
-        nlohmann::json response = it->second(req);
+        nlohmann::json response = it->second(req,clientSocket);
         return response.dump();
     } catch (const std::exception& e) {
         std::cerr << "Handler error for action " << action << ": " << e.what() << std::endl;

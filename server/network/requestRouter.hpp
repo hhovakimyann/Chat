@@ -6,8 +6,9 @@
 #include "../controllers/group/groupController.hpp"
 #include "../../nlohmann/json.hpp"
 #include "../utils/jwt/jwt.hpp"
+#include <unordered_map>
+#include <chrono>
 #include <string>
-#include <map>
 
 class RequestRouter {
 private:
@@ -15,11 +16,8 @@ private:
     DMController& dmCtrl;
     GroupController& groupCtrl;
 
-    using HandlerJson = std::function<nlohmann::json(const nlohmann::json&)>;
-    std::unordered_map<std::string, HandlerJson> handlers;
-
-    using HandlerJsonSocket = std::function<nlohmann::json(const nlohmann::json&, int)>;
-    std::unordered_map<std::string, HandlerJsonSocket> auth;
+    using Handler = std::function<nlohmann::json(const nlohmann::json&, int)>;
+    std::unordered_map<std::string, Handler> handlers;
 
     bool validateToken(const std::string& token);
 public:

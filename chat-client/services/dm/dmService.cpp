@@ -89,7 +89,10 @@ std::vector<DMConversation> ClientDMService::getAllConversations() {
         {"action", "list_dm_conversations"},
         {"token", session.getJWT()}
     };
+    
     std::string req = req_json.dump() + "\n";
+    std::cout << req << std::endl;
+
     network->sendData(req);
     
     std::string response_str = network->receiveData();

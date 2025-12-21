@@ -6,11 +6,13 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <mutex>
 
 class ClientNetwork : public INetwork{
 private:
     int sock;
     struct sockaddr_in server_addr;
+    std::mutex receiveMutex;
         
 public:
     ClientNetwork(); // ++

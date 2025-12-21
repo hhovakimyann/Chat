@@ -62,9 +62,7 @@ bool NotificationManager::isUserOnline(const std::string& username) {
 bool NotificationManager::sendToUser(const std::string& username, const std::string& message) {
     std::lock_guard<std::mutex> lock(mutex);
     auto it = usernameToSocket.find(username);
-    std::cout << "AAAAAAAAAAAAAAAAA" << std::endl;
     if (it != usernameToSocket.end()) {
-        std::cout << "BBBBBBBBBBBBBBBBBB" << std::endl;
         int socket = it->second;
         
         uint32_t dataLen = htonl(static_cast<uint32_t>(message.size()));
@@ -74,7 +72,6 @@ bool NotificationManager::sendToUser(const std::string& username, const std::str
             return false;
         }
        
-        std::cout << "CCCCCCCCCCCCCCCCC" << std::endl;
         size_t totalSent = 0;
         while (totalSent < message.size()) {
             ssize_t sent = send(socket, message.c_str() + totalSent, 
@@ -86,12 +83,10 @@ bool NotificationManager::sendToUser(const std::string& username, const std::str
             }
             totalSent += sent;
         }
-        std::cout << "DDDDDDDDDDDDDDDDDDD" << std::endl;
         std::cout << "[Notification] Message sent to " << username 
                   << " (" << message.size() << " bytes)" << std::endl;
         return true;
     }
-    std::cout << "Notifier Returned False" << std::endl;
     return false;
 }
 

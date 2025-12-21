@@ -28,7 +28,7 @@ class MenuManager {
     
     bool inChatMode = false;
     std::string chatTarget;
-    public:
+public:
     MenuManager(IAuthService&, IDMService&, IGroupService&, UserSession&, INetwork*); // ++
     void run(); // ++
     

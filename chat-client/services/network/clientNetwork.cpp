@@ -55,7 +55,9 @@ bool ClientNetwork::sendData(const std::string& data) {
 }
 
 std::string ClientNetwork::receiveData() {
+    std::lock_guard<std::mutex> lock(receiveMutex);
     if (!isConnected()) {
+        std::cout << "Socket Dont Connected" << std::endl;
         return "";
     }
 
@@ -110,6 +112,7 @@ bool ClientNetwork::isConnected(){
 
 void ClientNetwork::disconnect() {
     if (isConnected()) {
+        std::cout << "Called Disconnect" << std::endl;
         close(sock);
         sock = -1;
     }

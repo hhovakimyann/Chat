@@ -9,8 +9,8 @@
 
 DMState::~DMState() {
     isChatActive = false;
-    if (listenerThread->joinable()) {
-        listenerThread->detach();
+    if (listenerThread && listenerThread->joinable()) {
+        listenerThread->join();
     }
 }
 
@@ -20,18 +20,23 @@ bool DMState::checkUserExists(MenuManager& manager, const std::string& username)
 
 void DMState::startListening(MenuManager& manager) {
     while (isChatActive) {
-        std::string rawResponse = manager.network()->receiveData();
-        std::cout << "Raw Responce " << rawResponse << std::endl;
-        if (rawResponse.empty()) {
-            if (isChatActive) {
-                std::lock_guard<std::mutex> lock(consoleMtx);
-                std::cout << "\n[System] Disconnected from server.\n> " << std::flush;
-                isChatActive = false;
-            }
-            break;
-        }
+        std::string rawResponse;
 
-        try {
+        if (!manager.network() || !manager.network()->isConnected()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        
+        try{
+            rawResponse = manager.network()->receiveData();
+
+            std::cout << "Raw Responce " << rawResponse << std::endl;
+            if (rawResponse.empty()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                continue;
+            }
+
+            std::cout << "[DEBUG] Received: " << rawResponse.substr(0, 100) << std::endl;            
             auto json = nlohmann::json::parse(rawResponse);
 
             if (json.contains("type") && json["type"] == "new_message") {
@@ -47,14 +52,16 @@ void DMState::startListening(MenuManager& manager) {
                     std::cout << "\r\033[K[System] New message from " << sender << "\n> " << std::flush;
                 }
             }
-            else if (json.contains("status")) {
+            else if (json.contains("status") && json["status"] == "success") {
                 if (json["status"] == "error") {
                     std::lock_guard<std::mutex> lock(consoleMtx);
                     std::cout << "\r\033[K[Error] " << json["message"] << "\n> " << std::flush;
                 }
             }
-
-        } catch (...) {}
+        }catch(const std::exception& e) {
+            std::cout << "Catch in Listener Thread " << e.what() << std::endl;
+        }
+        
     }
 }
 
@@ -70,17 +77,19 @@ void DMState::enterChatMode(MenuManager& manager, const std::string& target) {
     std::cout << us.getUsername() << std::endl;
     for (const auto& dm : conversations) {
         std::string prefix = (dm.sender == us.getUsername() ) ? "[You]" : "[" + dm.sender + "]";
-        std::cout << prefix << ": " << dm.timestamp << "\t\t " << dm.content << std::endl;
+        std::cout << prefix << ": " << dm.content << "\t\t " << dm.timestamp << std::endl;
     }
     std::cout << std::string(50, '-') << "\n";
     std::cout << "> " << std::flush;
+
 
     listenerThread = std::thread(&DMState::startListening, this, std::ref(manager));
 
     std::string input;
     while(isChatActive) {
-        std::getline(std::cin, input);
+       std::cin >> input;
         if(input == "/back" || input == "/exit") {
+            std::cout << "EXITINGGGGGGGGG" << std::endl;
             isChatActive = false;
             break;
         }
@@ -99,6 +108,7 @@ void DMState::enterChatMode(MenuManager& manager, const std::string& target) {
         listenerThread->detach();
     }
 
+    listenerThread.reset();
     manager.exitChat();
 }
 
@@ -121,7 +131,9 @@ void DMState::handleInput(MenuManager& manager, const std::string& input) {
         std::string username = manager.inputString("Enter username to message: @");
         if (!username.empty() && checkUserExists(manager, username)) {
             manager.enterChat(username);
+            manager.setTarget(username);
             enterChatMode(manager,username);
+            std::cout << "Exiting from chat" << std::endl;
         } else {
             std::cout << "User not found!\n";
             manager.pause();
