@@ -15,6 +15,7 @@ public:
 
     nlohmann::json registerUser(const nlohmann::json& req, int clientSocket);
     nlohmann::json login(const nlohmann::json& req, int clientSocket);
+    nlohmann::json refresh(const nlohmann::json& req);
 };
 
 #endif

@@ -17,6 +17,7 @@ public:
     bool checkResponse(const std::string& response_data, UserInfo* outInfo);
     bool login(UserInfo& info, const std::string& password) override;
     bool registerUser(UserInfo& info, const std::string& password) override;
+    bool performRefresh();
 
 };
 

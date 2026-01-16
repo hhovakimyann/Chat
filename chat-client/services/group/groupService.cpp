@@ -2,22 +2,28 @@
 #include "../../../nlohmann/json.hpp"
 #include <iostream>
 
-ClientGroupService::ClientGroupService(INetwork* net, UserSession& s) : network(net), session(s) {}
+ClientGroupService::ClientGroupService(INetwork* net, UserSession& s, ClientAuthService* auth) : network(net), session(s), authService(auth) {}
 
 std::vector<std::string> ClientGroupService::listGroups() {
     if(!session.isLoggedIn()) return {};
     nlohmann::json req_json {
         {"action","list_groups"},
-        {"token", session.getJWT()}
+        {"token", session.getAccessToken()}
     };
 
     std::string req = req_json.dump() + "\n";
     if (!network->sendData(req)) return {};
     
+    std::string response_str = network->receiveData();
     try {
-        auto resp = nlohmann::json::parse(network->receiveData());
+        auto resp = nlohmann::json::parse(response_str);
 
         if (resp.value("status", "") != "success") {
+             if (resp.value("message", "") == "Token expired") {
+                if (authService->performRefresh()) {
+                    return listGroups(); 
+                }
+            }
             return {};
         }
 
@@ -37,15 +43,23 @@ bool ClientGroupService::createGroup(const std::string& name) {
 
     nlohmann::json req_json = {
         {"action", "create_group"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"name", name}
     };
     std::string req = req_json.dump() + "\n";
     if (!network->sendData(req)) return false;
 
+    std::string response_str = network->receiveData();
     try {
-        auto resp = nlohmann::json::parse(network->receiveData());
-        return resp.value("status", "") == "success";
+        auto resp = nlohmann::json::parse(response_str);
+        if (resp.value("status", "") == "success") return true;
+
+        if (resp.value("message", "") == "Token expired") {
+             if (authService->performRefresh()) {
+                 return createGroup(name);
+             }
+        }
+        return false;
     } catch (...) {
         return false;
     }
@@ -56,15 +70,23 @@ bool ClientGroupService::joinGroup(const std::string& name) {
 
     nlohmann::json req_json = {
         {"action", "join_group"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"group_name", name}
     };
     std::string req = req_json.dump() + "\n";
     if (!network->sendData(req)) return false;
 
+    std::string response_str = network->receiveData();
     try {
-        auto resp = nlohmann::json::parse(network->receiveData());
-        return resp.value("status", "") == "success";
+        auto resp = nlohmann::json::parse(response_str);
+        if (resp.value("status", "") == "success") return true;
+
+        if (resp.value("message", "") == "Token expired") {
+             if (authService->performRefresh()) {
+                 return joinGroup(name);
+             }
+        }
+        return false;
     } catch (...) {
         return false;
     }
@@ -75,15 +97,23 @@ bool ClientGroupService::leaveGroup(const std::string& name) {
 
     nlohmann::json req_json = {
         {"action", "leave_group"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"group_name", name}
     };
     std::string req = req_json.dump() + "\n";
     if (!network->sendData(req)) return false;
 
+    std::string response_str = network->receiveData();
     try {
-        auto resp = nlohmann::json::parse(network->receiveData());
-        return resp.value("status", "") == "success";
+        auto resp = nlohmann::json::parse(response_str);
+        if (resp.value("status", "") == "success") return true;
+
+        if (resp.value("message", "") == "Token expired") {
+             if (authService->performRefresh()) {
+                 return leaveGroup(name);
+             }
+        }
+        return false;
     } catch (...) {
         return false;
     }
@@ -94,7 +124,7 @@ bool ClientGroupService::sendMessage(const std::string& groupName, const std::st
 
     nlohmann::json req_json = {
         {"action", "send_group_message"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"group_name", groupName},
         {"content", content}
     };
@@ -102,9 +132,17 @@ bool ClientGroupService::sendMessage(const std::string& groupName, const std::st
     std::string req = req_json.dump() + "\n";
     if (!network->sendData(req)) return false;
 
+    std::string response_str = network->receiveData();
     try {
-        auto resp = nlohmann::json::parse(network->receiveData());
-        return resp.value("status", "") == "success";
+        auto resp = nlohmann::json::parse(response_str);
+        if (resp.value("status", "") == "success") return true;
+
+        if (resp.value("message", "") == "Token expired") {
+             if (authService->performRefresh()) {
+                 return sendMessage(groupName, content);
+             }
+        }
+        return false;
     } catch (...) {
         return false;
     }
@@ -117,7 +155,7 @@ std::vector<Message> ClientGroupService::fetchMessages(const std::string& groupN
 
     nlohmann::json req_json = {
         {"action", "fetch_group_messages"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"group_name", groupName},
         {"limit", limit <= 0 ? 50 : limit}
     };
@@ -125,10 +163,18 @@ std::vector<Message> ClientGroupService::fetchMessages(const std::string& groupN
     std::string req = req_json.dump() + "\n";
     if (!network->sendData(req)) return messages;
 
+    std::string response_str = network->receiveData();
     try {
-        auto resp = nlohmann::json::parse(network->receiveData());
+        auto resp = nlohmann::json::parse(response_str);
 
-        if (resp.value("status", "") != "success") return messages;
+        if (resp.value("status", "") != "success") {
+            if (resp.value("message", "") == "Token expired") {
+                 if (authService->performRefresh()) {
+                     return fetchMessages(groupName, limit);
+                 }
+            }
+            return messages;
+        }
 
         auto msgs = resp.value("messages", nlohmann::json::array());
         for (const auto& m : msgs) {

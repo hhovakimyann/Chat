@@ -11,9 +11,9 @@ bool UserSession::isLoggedIn() const {
     return user.has_value();
 }
 
-const std::string& UserSession::getJWT() const {
+const std::string& UserSession::getAccessToken() const {
     static const std::string empty;
-    return user ? user->jwt : empty;
+    return user ? user->accessToken : empty;
 }
 
 const UserInfo& UserSession::getUser() const {

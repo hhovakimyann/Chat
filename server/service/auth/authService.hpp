@@ -4,14 +4,18 @@
 #include "../../interfaces/IAuthService.hpp"
 #include "../../../database/IDatabase.hpp"
 #include "../../password/password.hpp"
+#include "../../../../shared/userSession.hpp"
+#include <optional>
 #include <memory>
 #include <string>
+
+#include "../../utils/jwt/jwt.hpp"
 
 class ServerAuthService : public IAuthService {
 private:
     IDatabase& db;
 
-    std::string generateJWT(int userId, const std::string& username);
+    JWT::Tokens generateJWT(int userId, const std::string& username);
     bool usernameExists(const std::string& username); // ++
     bool emailExists(const std::string& email); // ++
 

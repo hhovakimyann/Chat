@@ -1,5 +1,5 @@
 #include "../../../shared/session/userSession.hpp"
-#include "../../../notifier/notificationManager.hpp"
+#include "../../../server/notifier/notificationManager.hpp"
 #include "dmController.hpp"
 #include <iostream>
 #include <sstream>

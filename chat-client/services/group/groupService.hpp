@@ -4,13 +4,15 @@
 #include "../../interfaces/IGroupService.hpp"
 #include "../../interfaces/INetwork.hpp"
 #include "../../../shared/session/userSession.hpp"
+#include "../interfaces/IAuthService.hpp"
 
 class ClientGroupService : public IGroupService {
 private:
     INetwork* network;
     UserSession& session;
+    IAuthService* authService;
 public:
-    ClientGroupService(INetwork* net, UserSession& s); //++
+    ClientGroupService(INetwork* net, UserSession& s, IAuthService* auth); //++
 
     std::vector<std::string> listGroups() override; // ++
     bool createGroup(const std::string& name) override; // ++

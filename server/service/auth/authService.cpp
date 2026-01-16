@@ -7,8 +7,8 @@ ServerAuthService::ServerAuthService(IDatabase& connection) : db(connection) {
     }
 }
 
-std::string ServerAuthService::generateJWT(int userId, const std::string& username) {
-    return JWT::encode(username,userId);
+JWT::Tokens ServerAuthService::generateJWT(int userId, const std::string& username) {
+    return JWT::generateTokens(username,userId);
 }
 
 bool ServerAuthService::usernameExists(const std::string& username) {
@@ -54,7 +54,10 @@ std::optional <UserInfo> ServerAuthService::login(const std::string& username,co
     info.firstName = firstName;
     info.secondName = secondName;
     info.email = email;
-    info.jwt = generateJWT(userId, username);
+    info.email = email;
+    auto tokens = generateJWT(userId, username);
+    info.accessToken = tokens.accessToken;
+    info.refreshToken = tokens.refreshToken;
 
     return info;
 }
@@ -89,7 +92,10 @@ std::optional<UserInfo> ServerAuthService::registerUser(const std::string& usern
     info.firstName = firstName;
     info.secondName = secondName;
     info.email = email;
-    info.jwt = generateJWT(userId, info.username);
+    info.email = email;
+    auto tokens = generateJWT(userId, info.username);
+    info.accessToken = tokens.accessToken;
+    info.refreshToken = tokens.refreshToken;
 
     return info;
 }

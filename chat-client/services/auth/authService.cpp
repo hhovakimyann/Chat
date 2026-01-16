@@ -15,8 +15,9 @@ bool ClientAuthService::checkResponse(const std::string& response_data, UserInfo
             return false;
         }
 
-        std::string jwtSession = responseJson.value("token", "");
-        if (jwtSession.empty()) {
+        std::string accessToken = responseJson.value("accessToken", "");
+        std::string refreshToken = responseJson.value("refreshToken", "");
+        if (accessToken.empty() || refreshToken.empty()) {
             std::cerr << "ERROR: Token missing from successful authorization response." << std::endl;
             return false;
         }
@@ -24,7 +25,8 @@ bool ClientAuthService::checkResponse(const std::string& response_data, UserInfo
         outInfo->firstName = responseJson.value("first_name", "");
         outInfo->secondName = responseJson.value("second_name", ""); 
         outInfo->email = responseJson.value("email", "");                           
-        outInfo->jwt = jwtSession; 
+        outInfo->accessToken = accessToken;
+        outInfo->refreshToken = refreshToken; 
         std::cout << "SUCCESS: Authorization data received and stored." << std::endl;
         return true;
 
@@ -74,6 +76,37 @@ bool ClientAuthService::registerUser(UserInfo& info, const std::string& password
     std::string response_data = network->receiveData();
 
     if (checkResponse(response_data, &info)) {
+        session.login(info);
+        return true;
+    }
+    return false;
+}
+
+bool ClientAuthService::performRefresh() {
+    if (!network->isConnected()) return false;
+    
+    nlohmann::json request_json = {
+        {"action", "refresh"},
+        {"refreshToken", session.getUser().refreshToken}
+    };
+
+    std::string req = request_json.dump() + "\n";
+    if (!network->sendData(req)) return false;
+
+    std::string response_data = network->receiveData();
+    nlohmann::json responseJson;
+    try {
+        responseJson = nlohmann::json::parse(response_data);
+    } catch(...) {
+        return false;
+    }
+
+    if (responseJson.value("status", "") == "success") {
+        UserInfo info = session.getUser();
+        info.accessToken = responseJson.value("accessToken", "");
+        if (responseJson.contains("refreshToken")) {
+             info.refreshToken = responseJson.value("refreshToken", "");
+        }
         session.login(info);
         return true;
     }

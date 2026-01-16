@@ -5,7 +5,7 @@
 #include <optional>
 
 struct UserInfo {
-    std::string username, firstName, secondName, email, jwt;
+    std::string username, firstName, secondName, email, accessToken, refreshToken;
 };
 
 class UserSession {
@@ -17,7 +17,7 @@ public:
     void logout();           
     bool isLoggedIn() const;
 
-    const std::string& getJWT() const;
+    const std::string& getAccessToken() const;
     const UserInfo& getUser() const; 
     const std::string& getUsername() const;
 };

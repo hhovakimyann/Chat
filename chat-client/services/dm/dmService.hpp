@@ -4,15 +4,16 @@
 #include "../../interfaces/IDMService.hpp"
 #include "../../interfaces/INetwork.hpp"
 #include "../../../shared/session/userSession.hpp"
-
+#include "../../interfaces/IAuthService.hpp"
 
 class ClientDMService : public IDMService {
 private:
     INetwork* network;
+    IAuthService* authService;
     UserSession& session;
 
 public:
-    ClientDMService(INetwork* net, UserSession& s);
+    ClientDMService(INetwork* net, UserSession& s, IAuthService* auth);
 
     bool checkUserExists(const std::string& username) override;
     std::vector<Message> fetchMessages(const std::string& user, int limit) override;

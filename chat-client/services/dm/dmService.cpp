@@ -2,12 +2,12 @@
 #include <iostream>
 #include "../../../nlohmann/json.hpp"
 
-ClientDMService::ClientDMService(INetwork *net, UserSession& s) : network(net), session(s) {}
+ClientDMService::ClientDMService(INetwork *net, UserSession& s, IAuthService* auth) : network(net), session(s), authService(auth) {}
 
 bool ClientDMService::checkUserExists(const std::string& username) {
     nlohmann::json req_json = {
         {"action", "check_user_exists"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"username", username}
     };
     std::string req = req_json.dump() + "\n";
@@ -15,6 +15,12 @@ bool ClientDMService::checkUserExists(const std::string& username) {
     
     std::string response_str = network->receiveData();
     auto resp = nlohmann::json::parse(response_str);
+
+    if (resp.value("message", "") == "Token expired") {
+        if (authService->performRefresh()) {
+            return checkUserExists(username); 
+        }
+    }
     
     return resp["status"] == "success" && resp.value("exists", false);
 }
@@ -24,7 +30,7 @@ std::vector<Message> ClientDMService::fetchMessages(const std::string& withUsern
     
     nlohmann::json req_json = {
         {"action", "fetch_dm"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"with", withUsername},
         {"limit", limit}
     };
@@ -59,6 +65,19 @@ std::vector<Message> ClientDMService::fetchMessages(const std::string& withUsern
         std::cerr << "JSON parse error in fetchMessages: " << e.what() << std::endl;
     }
 
+    if (!messages.empty()) return messages;
+
+   
+    nlohmann::json check; 
+    try { 
+        check = nlohmann::json::parse(response_str);
+    }catch(...){}
+    if (check.value("message","") == "Token expired") {
+        if(authService->performRefresh()) {
+             return fetchMessages(withUsername, limit);
+        }
+    }
+
     return messages;
 }
 
@@ -68,7 +87,7 @@ bool ClientDMService::sendMessage(const std::string& toUser, const std::string& 
 
     nlohmann::json req_json = {
         {"action", "send_dm"},
-        {"token", session.getJWT()},
+        {"token", session.getAccessToken()},
         {"to", toUser},
         {"content", content}
     };
@@ -87,7 +106,7 @@ bool ClientDMService::sendMessage(const std::string& toUser, const std::string& 
 std::vector<DMConversation> ClientDMService::getAllConversations() {
     nlohmann::json req_json = {
         {"action", "list_dm_conversations"},
-        {"token", session.getJWT()}
+        {"token", session.getAccessToken()}
     };
     
     std::string req = req_json.dump() + "\n";

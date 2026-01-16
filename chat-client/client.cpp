@@ -11,8 +11,8 @@ int main() {
 
     UserSession session;
     ClientAuthService   auth(network.get(), session);
-    ClientDMService       dm(network.get(), session);
-    ClientGroupService  group(network.get(), session);
+    ClientDMService       dm(network.get(), session, &auth);
+    ClientGroupService  group(network.get(), session, &auth);
 
     MenuManager app(auth, dm, group, session, network.get());
     app.run();

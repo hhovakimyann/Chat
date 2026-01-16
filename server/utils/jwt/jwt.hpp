@@ -14,15 +14,31 @@ private:
     }
 
 public:
-    static std::string encode(const std::string& username, int userId) {
-        return jwt::create()
+    struct Tokens {
+        std::string accessToken;
+        std::string refreshToken;
+    };
+
+    static Tokens generateTokens(const std::string& username, int userId) {
+        std::string accessToken = jwt::create()
             .set_issuer("securechat")
             .set_type("JWS")
             .set_payload_claim("username", jwt::claim(username))
             .set_payload_claim("user_id", jwt::claim(std::to_string(userId)))
             .set_issued_at(std::chrono::system_clock::now())
-            .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours{24})
+            .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours{3})
             .sign(jwt::algorithm::hs256{getSecret()});
+
+        std::string refreshToken = jwt::create()
+            .set_issuer("securechat")
+            .set_type("JWS")
+            .set_payload_claim("username", jwt::claim(username))
+            .set_payload_claim("user_id", jwt::claim(std::to_string(userId)))
+            .set_issued_at(std::chrono::system_clock::now())
+            .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours{24 * 30}) // 30 days
+            .sign(jwt::algorithm::hs256{getSecret()});
+
+        return {accessToken, refreshToken};
     }
 
     static std::optional<jwt::decoded_jwt<jwt::traits::kazuho_picojson>> decode(const std::string& token) {
