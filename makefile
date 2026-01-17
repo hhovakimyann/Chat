@@ -34,7 +34,7 @@ SERVER_SRCS = \
 	server/server.cpp \
 	server/serverMain.cpp \
 	config/env_loader.cpp \
-	notifier/notificationManager.cpp 
+	server/notifier/notificationManager.cpp 
 
 
 

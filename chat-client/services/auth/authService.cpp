@@ -71,8 +71,6 @@ bool ClientAuthService::registerUser(UserInfo& info, const std::string& password
     };
 
     std::string req = request_json.dump() + "\n";
-    if (!network->sendData(req)) return false;
-
     std::string response_data = network->receiveData();
 
     if (checkResponse(response_data, &info)) {

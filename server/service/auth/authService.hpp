@@ -4,12 +4,10 @@
 #include "../../interfaces/IAuthService.hpp"
 #include "../../../database/IDatabase.hpp"
 #include "../../password/password.hpp"
-#include "../../../../shared/userSession.hpp"
-#include <optional>
+#include "../../../shared/session/userSession.hpp"
+#include "../../utils/jwt/jwt.hpp"
 #include <memory>
 #include <string>
-
-#include "../../utils/jwt/jwt.hpp"
 
 class ServerAuthService : public IAuthService {
 private:

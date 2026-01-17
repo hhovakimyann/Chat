@@ -77,14 +77,11 @@ nlohmann::json DMController::sendDM(const nlohmann::json &req) {
         pushNotification["timestamp"] = getCurrentTimestamp();
         
         std::string pushJson = pushNotification.dump();
-        if(NotificationManager::getInstance().isUserOnline(toUsername)) {
-            bool pushSent = NotificationManager::getInstance().sendToUser(toUsername, pushJson);
-            
-            if (pushSent) {
-                std::cout << "Push notification sent to " << toUsername << std::endl;
-            } else {
-                std::cout << "User " << toUsername << " is offline or not found" << std::endl;
-            }
+        if(RealTimeManager::getInstance().isOnline(toUsername)) {
+            RealTimeManager::getInstance().publishMessage("msg:user" + toUsername, pushJson);
+            std::cout << "Push notification sent to " << toUsername << std::endl;
+        } else {
+             std::cout << "User " << toUsername << " is offline or not found" << std::endl;
         }
         return {
             {"status", "success"},

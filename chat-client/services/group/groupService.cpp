@@ -2,7 +2,7 @@
 #include "../../../nlohmann/json.hpp"
 #include <iostream>
 
-ClientGroupService::ClientGroupService(INetwork* net, UserSession& s, ClientAuthService* auth) : network(net), session(s), authService(auth) {}
+ClientGroupService::ClientGroupService(INetwork* net, UserSession& s, IAuthService* auth) : network(net), session(s), authService(auth) {}
 
 std::vector<std::string> ClientGroupService::listGroups() {
     if(!session.isLoggedIn()) return {};

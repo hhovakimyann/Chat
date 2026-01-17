@@ -13,12 +13,14 @@ private:
     UserSession& session;
 public:
     ClientAuthService(INetwork* net,UserSession& s);
+
+    bool registerUser(UserInfo& info, const std::string& password) override;
+    bool login(UserInfo& info, const std::string& password) override;
     
     bool checkResponse(const std::string& response_data, UserInfo* outInfo);
-    bool login(UserInfo& info, const std::string& password) override;
-    bool registerUser(UserInfo& info, const std::string& password) override;
-    bool performRefresh();
+    bool performRefresh() override;
 
 };
 
 #endif // AUTH_SERVICE_HPP
+    

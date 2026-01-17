@@ -1,13 +1,12 @@
 #include "authController.hpp"
 #include "../../../shared/session/userSession.hpp"
 #include "notifier/notificationManager.hpp"
+#include "utils/jwt/jwt.hpp"
 #include <iostream>
 
-AuthController::AuthController(std::unique_ptr<IAuthService> as)
-    : authService(std::move(as)) {}
+AuthController::AuthController(std::unique_ptr<IAuthService> as) : authService(std::move(as)) {}
 
-nlohmann::json AuthController::login(const nlohmann::json &req,
-                                     int clientSocket) {
+nlohmann::json AuthController::login(const nlohmann::json &req, int clientSocket) {
   try {
     auto username = req.value("username", "");
     auto password = req.value("password", "");
@@ -17,15 +16,20 @@ nlohmann::json AuthController::login(const nlohmann::json &req,
 
     auto info = authService->login(username, password);
     if (info.has_value()) {
-    RealTimeManager::getInstance().markOnline(username, clientSocket);
-      return {{"status", "success"},
-              {"accessToken", info->accessToken},
-              {"refreshToken", info->refreshToken},
-              {"user",
-               {{"username", info->username},
-                {"first_name", info->firstName},
-                {"second_name", info->secondName},
-                {"email", info->email}}}};
+        RealTimeManager::getInstance().markOnline(username, clientSocket);
+        return {
+          {"status", "success"},
+          {"accessToken", info->accessToken},
+          {"refreshToken", info->refreshToken},
+          {"user",
+          {
+            {"username", info->username},
+            {"first_name", info->firstName},
+            {"second_name", info->secondName},
+            {"email", info->email}
+          }
+        }
+      };
     }
     return {{"status", "error"}, {"message", "Wrong Username or Password"}};
   } catch (const nlohmann::json::exception &e) {
@@ -41,8 +45,7 @@ nlohmann::json AuthController::login(const nlohmann::json &req,
   }
 }
 
-nlohmann::json AuthController::registerUser(const nlohmann::json &req,
-                                            int clientSocket) {
+nlohmann::json AuthController::registerUser(const nlohmann::json &req,int clientSocket) {
   std::string username = req.value("username", "");
   std::string firstName = req.value("first_name", "");
   std::string secondName = req.value("second_name", "");
@@ -52,19 +55,23 @@ nlohmann::json AuthController::registerUser(const nlohmann::json &req,
   if (username.empty() || email.empty() || password.empty()) {
     return {{"status", "error"}, {"message", "All fields are required"}};
   }
-  auto info = authService->registerUser(username, firstName, secondName, email,
-                                        password);
+  auto info = authService->registerUser(username, firstName, secondName, email, password);
   if (info.has_value()) {
-    NotificationManager::getInstance().registerUser(username, clientSocket);
-    return {{"status", "success"},
-            {"message", "Registration successful"},
-            {"accessToken", info->accessToken},
-            {"refreshToken", info->refreshToken},
-            {"user",
-             {{"username", info->username},
-              {"first_name", info->firstName},
-              {"second_name", info->secondName},
-              {"email", info->email}}}};
+    RealTimeManager::getInstance().markOnline(username, clientSocket);
+    return {
+      {"status", "success"},
+      {"message", "Registration successful"},
+      {"accessToken", info->accessToken},
+      {"refreshToken", info->refreshToken},
+      {"user",
+       {  
+        {"username", info->username},
+        {"first_name", info->firstName},
+        {"second_name", info->secondName},
+        {"email", info->email}
+       }
+      }
+    };
   }
 
   return {{"status", "error"}, {"message", "Username or email already taken"}};

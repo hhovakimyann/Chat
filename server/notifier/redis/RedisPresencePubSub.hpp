@@ -1,5 +1,6 @@
 #ifndef REDIS_PUB_SUB
 #define REDIS_PUB_SUB
+
 #include "../../interfaces/IPresencePubSub.hpp"
 #include <sw/redis++/redis++.h>
 #include <iostream>

@@ -5,7 +5,12 @@
 #include <optional>
 
 struct UserInfo {
-    std::string username, firstName, secondName, email, accessToken, refreshToken;
+    std::string username;
+    std::string firstName; 
+    std::string secondName;
+    std::string email;
+    std::string accessToken;
+    std::string refreshToken;
 };
 
 class UserSession {

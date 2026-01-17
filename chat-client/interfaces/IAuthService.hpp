@@ -9,7 +9,7 @@ public:
     virtual ~IAuthService() = default;
     virtual bool login(UserInfo& info, const std::string& password) = 0;
     virtual bool registerUser(UserInfo& info, const std::string& password) = 0;
-
+    virtual bool performRefresh() = 0;
 };
 
 #endif

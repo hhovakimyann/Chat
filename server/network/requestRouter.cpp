@@ -13,6 +13,11 @@ RequestRouter::RequestRouter(AuthController& ac, DMController& dc, GroupControll
         return authCtrl.registerUser(req,clientSocket);
     };
 
+    handlers["refresh"] = [this](const nlohmann::json& req, int clientSocket) -> nlohmann::json {
+        std::cout << "Refresh Handler" << std::endl;
+        return authCtrl.refresh(req);
+    };
+
     auto protectedHandler = [this](auto handlerFunc) -> Handler {
         return [this, handlerFunc](const nlohmann::json& req, int clientSocket) -> nlohmann::json {
             if(!req.contains("token")) {

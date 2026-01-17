@@ -1,38 +1,34 @@
 #ifndef NOTIFICATION_MANAGER_HPP
 #define NOTIFICATION_MANAGER_HPP
 
-#include <string>
-#include <unordered_map>
-#include <mutex>
-#include <optional>
-#include <functional>
-#include <vector>
+#include "../interfaces/IPresencePubSub.hpp"
 #include <memory>
+#include <string>
 
-class NotificationManager {
-public:
-    static NotificationManager& getInstance();
-    
-    void registerUser(const std::string& username, int socket);
-    void unregisterUser(const std::string& username);
-    void unregisterUserBySocket(int socket);
-    std::optional<int> getSocket(const std::string& username);
-    bool isUserOnline(const std::string& username);
-    
-    bool sendToUser(const std::string& username, const std::string& message);
-    void broadcast(const std::string& message, const std::vector<std::string>& exclude = {});
-    
-    void forEachUser(std::function<void(const std::string&, int)> callback);
-    
+#include <map>
+
+class RealTimeManager {
 private:
-    NotificationManager() = default;
-    ~NotificationManager() = default;
-    NotificationManager(const NotificationManager&) = delete;
-    NotificationManager& operator=(const NotificationManager&) = delete;
-    
-    std::unordered_map<std::string, int> usernameToSocket;
-    std::unordered_map<int, std::string> socketToUsername;
-    std::mutex mutex;
+    std::unique_ptr<IPresencePubSub> presence;
+    static RealTimeManager instance;
+    std::map<int, std::string> socketToUser;
+
+    RealTimeManager() = default;
+public:
+
+    static RealTimeManager& getInstance() {
+        return instance;
+    }
+    void setPresence(std::unique_ptr<IPresencePubSub> p);
+
+    void markOnline(const std::string& username, int socket);
+    void markOffline(const std::string& username);
+    void unregisterUserBySocket(int socket);
+    bool isOnline(const std::string& username);
+    int getUserSocket(const std::string& username);
+
+    void publishMessage(const std::string& channel, const std::string& message);
+    void subscribeToChannel(const std::string& username, int socket);
 };
 
 #endif

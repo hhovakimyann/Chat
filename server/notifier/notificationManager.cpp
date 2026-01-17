@@ -1,110 +1,45 @@
 #include "notificationManager.hpp"
 #include <sys/socket.h>
-#include <unistd.h>
-#include <iostream>
-#include <algorithm>
 
-NotificationManager& NotificationManager::getInstance() {
-    static NotificationManager instance;
-    return instance;
+RealTimeManager RealTimeManager::instance;
+
+void RealTimeManager::setPresence(std::unique_ptr<IPresencePubSub> p ) {
+    presence = std::move(p);
 }
 
-
-void NotificationManager::registerUser(const std::string& username, int socket) {
-    std::lock_guard<std::mutex> lock(mutex);
-
-    auto it = usernameToSocket.find(username);
-    if (it != usernameToSocket.end()) {
-        int oldSocket = it->second;
-        socketToUsername.erase(oldSocket);
-    }
-    
-    auto socketIt = socketToUsername.find(socket);
-    if (socketIt != socketToUsername.end()) {
-        std::string oldUser = socketIt->second;
-        usernameToSocket.erase(oldUser);
-    }
-    
-    usernameToSocket[username] = socket;
-    socketToUsername[socket] = username;
-    
-    std::cout << "[Notification] User registered: " << username 
-              << " (socket: " << socket << ")" << std::endl;
+void RealTimeManager::markOnline(const std::string& username, int socket) {
+    presence->markOnline(username,socket);
+    socketToUser[socket] = username;
 }
 
-void NotificationManager::unregisterUserBySocket(int socket) {
-    std::lock_guard<std::mutex> lock(mutex);
-    auto it = socketToUsername.find(socket);
-    if (it != socketToUsername.end()) {
-        std::string username = it->second;
-        usernameToSocket.erase(username);
-        socketToUsername.erase(it);
-        std::cout << "[Notification] Socket unregistered: " << socket 
-                  << " (user: " << username << ")" << std::endl;
+void RealTimeManager::markOffline(const std::string& username) {
+    presence->markOffline(username);
+}
+
+void RealTimeManager::unregisterUserBySocket(int socket) {
+    auto it = socketToUser.find(socket);
+    if (it != socketToUser.end()) {
+        presence->markOffline(it->second);
+        socketToUser.erase(it);
     }
 }
 
-
-std::optional<int> NotificationManager::getSocket(const std::string& username) {
-    std::lock_guard<std::mutex> lock(mutex);
-    auto it = usernameToSocket.find(username);
-    if (it != usernameToSocket.end()) {
-        return it->second;
-    }
-    return std::nullopt;
+bool RealTimeManager::isOnline(const std::string& username) {
+    return presence->isOnline(username);
 }
 
-bool NotificationManager::isUserOnline(const std::string& username) {
-    std::lock_guard<std::mutex> lock(mutex);
-    return usernameToSocket.find(username) != usernameToSocket.end();
+int RealTimeManager::getUserSocket(const std::string& username) {
+    return presence->getUserSocket(username);
 }
 
-bool NotificationManager::sendToUser(const std::string& username, const std::string& message) {
-    std::lock_guard<std::mutex> lock(mutex);
-    auto it = usernameToSocket.find(username);
-    if (it != usernameToSocket.end()) {
-        int socket = it->second;
-        
-        uint32_t dataLen = htonl(static_cast<uint32_t>(message.size()));
-        if (send(socket, &dataLen, sizeof(dataLen), 0) != sizeof(dataLen)) {
-            socketToUsername.erase(socket);
-            usernameToSocket.erase(it);
-            return false;
-        }
-       
-        size_t totalSent = 0;
-        while (totalSent < message.size()) {
-            ssize_t sent = send(socket, message.c_str() + totalSent, 
-                               message.size() - totalSent, 0);
-            if (sent <= 0) {
-                socketToUsername.erase(socket);
-                usernameToSocket.erase(it);
-                return false;
-            }
-            totalSent += sent;
-        }
-        std::cout << "[Notification] Message sent to " << username 
-                  << " (" << message.size() << " bytes)" << std::endl;
-        return true;
-    }
-    return false;
+void RealTimeManager::publishMessage(const std::string& channel, const std::string& message) {
+    presence->publishMessage(channel,message);
 }
 
-
-void NotificationManager::broadcast(const std::string& message, 
-    const std::vector<std::string>& exclude) {
-    std::lock_guard<std::mutex> lock(mutex);
-
-    for (const auto& [username, socket] : usernameToSocket) {
-
-    if (std::find(exclude.begin(), exclude.end(), username) != exclude.end()) {
-        continue;
-    }
-
-    uint32_t dataLen = htonl(static_cast<uint32_t>(message.size()));
-
-    if (send(socket, &dataLen, sizeof(dataLen), 0) == sizeof(dataLen)) {
-        send(socket, message.c_str(), message.size(), 0);
-        }
-    }
+void RealTimeManager::subscribeToChannel(const std::string& username, int socket) {
+    presence->subscribeToChannel("msg:user" + username, [socket](const std::string& msg) {
+            uint32_t len = htonl(msg.size());
+            send(socket, &len, sizeof(len), 0);
+            send(socket, msg.c_str(), msg.size(), 0);
+    });
 }

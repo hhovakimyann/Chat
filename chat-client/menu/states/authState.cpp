@@ -24,7 +24,6 @@ void AuthState::handleInput(MenuManager& m, const std::string& in) {
             std::cout << "Login successful!\n";
         } else {
             std::cout << "Invalid credentials!\n";
-            std::exit(0);
         }
     }
     else if (in == "2") {

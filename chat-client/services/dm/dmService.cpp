@@ -2,7 +2,7 @@
 #include <iostream>
 #include "../../../nlohmann/json.hpp"
 
-ClientDMService::ClientDMService(INetwork *net, UserSession& s, IAuthService* auth) : network(net), session(s), authService(auth) {}
+ClientDMService::ClientDMService(INetwork *net, UserSession& s, IAuthService* auth) : network(net), authService(auth), session(s) {}
 
 bool ClientDMService::checkUserExists(const std::string& username) {
     nlohmann::json req_json = {

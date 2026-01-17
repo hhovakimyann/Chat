@@ -10,7 +10,6 @@ DMService::DMService(IDatabase& database) : db(database) {
     }
 }
 
-
 std::optional <int> DMService::checkUserExists(const std::string& username) {
     return getUserId(username); 
 }
