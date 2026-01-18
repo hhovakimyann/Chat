@@ -28,7 +28,7 @@ public:
             .set_issued_at(std::chrono::system_clock::now())
             .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours{3})
             .sign(jwt::algorithm::hs256{getSecret()});
-
+        std::cout << "Access Token Generated" << std::endl;
         std::string refreshToken = jwt::create()
             .set_issuer("securechat")
             .set_type("JWS")
@@ -37,7 +37,11 @@ public:
             .set_issued_at(std::chrono::system_clock::now())
             .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours{24 * 30}) // 30 days
             .sign(jwt::algorithm::hs256{getSecret()});
+        std::cout << "Refresh Token Generated" << std::endl;
 
+        if(accessToken == refreshToken) {
+            std::cout << "Access Token and Refresh Token are the same" << std::endl;
+        }
         return {accessToken, refreshToken};
     }
 

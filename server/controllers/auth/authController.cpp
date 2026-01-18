@@ -8,12 +8,16 @@ AuthController::AuthController(std::unique_ptr<IAuthService> as) : authService(s
 
 nlohmann::json AuthController::login(const nlohmann::json &req, int clientSocket) {
   try {
+    std::cout << "Got request:" << req << std::endl;
+    std::cout << "Trying to get username and password" << std::endl;
     auto username = req.value("username", "");
+    std::cout << "Got username: " << username << std::endl;
     auto password = req.value("password", "");
+    std::cout << "Got password: " << password << std::endl;
     if (username.empty() || password.empty()) {
       return {{"status", "error"}, {"message", "Missing Credentials"}};
     }
-
+    std::cout << "Trying to login" << std::endl;
     auto info = authService->login(username, password);
     if (info.has_value()) {
         RealTimeManager::getInstance().markOnline(username, clientSocket);
@@ -46,18 +50,27 @@ nlohmann::json AuthController::login(const nlohmann::json &req, int clientSocket
 }
 
 nlohmann::json AuthController::registerUser(const nlohmann::json &req,int clientSocket) {
+  std::cout << "Got request:" << req << std::endl;
   std::string username = req.value("username", "");
+  std::cout << "Got username: " << std::endl;
   std::string firstName = req.value("first_name", "");
+  std::cout << "Got first name: " << std::endl;
   std::string secondName = req.value("second_name", "");
+  std::cout << "Got second name: " << std::endl;
   std::string email = req.value("email", "");
+  std::cout << "Got email: " << email << std::endl;
   std::string password = req.value("password", "");
+  std::cout << "Got password: " << std::endl;
 
   if (username.empty() || email.empty() || password.empty()) {
     return {{"status", "error"}, {"message", "All fields are required"}};
   }
+  std::cout << "Trying to register" << std::endl;
   auto info = authService->registerUser(username, firstName, secondName, email, password);
   if (info.has_value()) {
+    std::cout << "Registration successful: Trying to make Online in redis" << std::endl;
     RealTimeManager::getInstance().markOnline(username, clientSocket);
+    std::cout << "Successfull Redis online Operation" << std::endl;
     return {
       {"status", "success"},
       {"message", "Registration successful"},

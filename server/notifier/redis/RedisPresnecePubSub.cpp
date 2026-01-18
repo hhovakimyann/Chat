@@ -1,6 +1,6 @@
 #include "RedisPresencePubSub.hpp"
 
-RedisPresencePubSub::RedisPresencePubSub(const std::string& uri = "tcp://127.0.0.1:6379" ) : redis(uri) {}
+RedisPresencePubSub::RedisPresencePubSub(const std::string& uri) : redis(uri) {}
 
 void RedisPresencePubSub::startSubscriber(const std::string& channel, std::function<void(const std::string&)> callback) {
     std::thread([this,channel,callback]() {
@@ -16,13 +16,15 @@ void RedisPresencePubSub::startSubscriber(const std::string& channel, std::funct
                 std::cerr << "Pub/Sub reconnecting"  << e.what() << std::endl;
             }
         }
-
     }).detach();
 }
 
 void RedisPresencePubSub::markOnline(const std::string& username, int socket) {
+    std::cout << "Try To Make Online in Redise" << std::endl;
     redis.set("user:socket:" + username,std::to_string(socket), std::chrono::hours(2));
+    std::cout << "Redis Seted" << std::endl;
     redis.sadd("onlie_users",username);
+    std::cout << "Redis Added" << std::endl;
 }
 void RedisPresencePubSub::markOffline(const std::string& username) {
     redis.del("user:socket:" + username);

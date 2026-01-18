@@ -1,7 +1,7 @@
 #include "server.hpp"
+#include "../config/env_loader.hpp"
 #include "../database/MySQLconnection.hpp"
 #include "../migrations/migration.hpp"
-#include "../config/env_loader.hpp"
 #include "controllers/auth/authController.hpp"
 #include "controllers/dm/dmController.hpp"
 #include "controllers/group/groupController.hpp"
@@ -9,7 +9,8 @@
 #include "service/dm/dmService.hpp"
 #include "service/group/groupService.hpp"
 #include "network/requestRouter.hpp"
-#include <iostream>
+#include "notifier/notificationManager.hpp"
+#include "notifier/redis/RedisPresencePubSub.hpp"
 #include <csignal>
 #include <memory>
 
@@ -87,7 +88,6 @@ int main(int argc, char* argv[]) {
     auto authService = std::make_unique<ServerAuthService>(*db);
     auto dmService = std::make_unique<DMService>(*db);
     auto groupService = std::make_unique<GroupService>(*db);
-
   
     AuthController authCtrl(std::move(authService));
     DMController dmCtrl(std::move(dmService));
@@ -95,6 +95,9 @@ int main(int argc, char* argv[]) {
 
     RequestRouter router(authCtrl,dmCtrl, groupCtrl);
 
+    auto redis = std::make_unique<RedisPresencePubSub>();
+    RealTimeManager::getInstance().setPresence(std::move(redis));
+    
     Server server(router);
     globalServer = &server;
 

@@ -58,19 +58,21 @@ std::optional <UserInfo> ServerAuthService::login(const std::string& username,co
     auto tokens = generateJWT(userId, username);
     info.accessToken = tokens.accessToken;
     info.refreshToken = tokens.refreshToken;
-
+    std::cout << "User info struct initialized In Login" << std::endl;
     return info;
 }
 
 
 std::optional<UserInfo> ServerAuthService::registerUser(const std::string& username, const std::string& firstName, const std::string& secondName, const std::string& email,const std::string& password) {
+    if (!db.isConnected()) db.connect();
     if (usernameExists(username)) return std::nullopt;
     if (emailExists(email)) return std::nullopt;
     if (password.length() < 6) return std::nullopt;
 
     std::string hash = Password::hashPassword(password);
     if (hash.empty()) return std::nullopt;;
-
+    
+    std::cout << "Registering user " << username << std::endl;
     std::string query = "INSERT INTO users (username, first_name, second_name, email, password_hash) VALUES ("
         "'" + db.escape(username) + "', "
         "'" + db.escape(firstName) + "', "
@@ -97,5 +99,6 @@ std::optional<UserInfo> ServerAuthService::registerUser(const std::string& usern
     info.accessToken = tokens.accessToken;
     info.refreshToken = tokens.refreshToken;
 
+    std::cout << "Initialized Info Struct in Register User" << std::endl;
     return info;
 }

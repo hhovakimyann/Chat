@@ -5,21 +5,21 @@ RequestRouter::RequestRouter(AuthController& ac, DMController& dc, GroupControll
     // === AUTH === 
     handlers["login"] = [this](const nlohmann::json& req, int clientSocket) -> nlohmann::json {
         std::cout << "Login Handler" << std::endl;
-        return authCtrl.login(req,clientSocket);
+        return this->authCtrl.login(req,clientSocket);
     };
 
     handlers["register"] = [this](const nlohmann::json& req, int clientSocket)  -> nlohmann::json {
         std::cout << "Register Handler" << std::endl;
-        return authCtrl.registerUser(req,clientSocket);
+        return this->authCtrl.registerUser(req,clientSocket);
     };
 
-    handlers["refresh"] = [this](const nlohmann::json& req, int clientSocket) -> nlohmann::json {
+    handlers["refresh"] = [this](const nlohmann::json& req, [[maybe_unused]] int clientSocket) -> nlohmann::json {
         std::cout << "Refresh Handler" << std::endl;
-        return authCtrl.refresh(req);
+        return this->authCtrl.refresh(req);
     };
 
-    auto protectedHandler = [this](auto handlerFunc) -> Handler {
-        return [this, handlerFunc](const nlohmann::json& req, int clientSocket) -> nlohmann::json {
+    auto protectedHandler = [](auto handlerFunc) -> Handler {
+        return [handlerFunc](const nlohmann::json& req, [[maybe_unused]] int clientSocket) -> nlohmann::json {
             if(!req.contains("token")) {
                 return {
                     {"success", "error"},
@@ -64,63 +64,63 @@ RequestRouter::RequestRouter(AuthController& ac, DMController& dc, GroupControll
     handlers["send_dm"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Send Dm Handler" << std::endl;
 
-        return dmCtrl.sendDM(req);
+        return this->dmCtrl.sendDM(req);
     });
 
-    handlers["fetch_dm"] = protectedHandler([this](const nlohmann::json& req) {
+    handlers["fetch_dm"] = protectedHandler([ this](const nlohmann::json& req) {
         std::cout << "Fetch Dm Handler" << std::endl;
-        return dmCtrl.getMessages(req);
+        return this->dmCtrl.getMessages(req);
     });
 
     handlers["list_dm_conversations"] = protectedHandler([this] (const nlohmann::json& req) {
         std::cout << "List DM Conversations Handler" << std::endl;
-        return dmCtrl.getConversations(req);
+        return this->dmCtrl.getConversations(req);
     });
 
     handlers["check_user_exists"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Chech User Exists Handler" << std::endl;
-        return dmCtrl.checkUserExists(req);
+        return this->dmCtrl.checkUserExists(req);
     });
 
     // ==== GROUPS ==== 
     handlers["list_groups"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "List Groups Handler" << std::endl;
-        return groupCtrl.getGroups(req);
+        return this->groupCtrl.getGroups(req);
     });
 
     handlers["create_group"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Create Group Handler" << std::endl;
 
-        return groupCtrl.createGroup(req);
+        return this->groupCtrl.createGroup(req);
     });
 
     handlers["join_group"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Join Group Handler" << std::endl;
-        return groupCtrl.joinGroup(req);
+        return this->groupCtrl.joinGroup(req);
     });
 
     handlers["leave_group"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Leave Group Handler" << std::endl;
-        return groupCtrl.leaveGroup(req);
+        return this->groupCtrl.leaveGroup(req);
     });
 
     handlers["send_group_message"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Send Group Message Handler" << std::endl;
-        return groupCtrl.sendGroupMessage(req);
+        return this->groupCtrl.sendGroupMessage(req);
     });
 
     handlers["fetch_group_messages"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Fetch Group Messages Handler" << std::endl;
-        return groupCtrl.getMessages(req);
+        return this->groupCtrl.getMessages(req);
     });
 
     handlers["get_group_members"] = protectedHandler([this](const nlohmann::json& req) {
         std::cout << "Get Group Handler" << std::endl;
-        return groupCtrl.getMembers(req);
+        return this->groupCtrl.getMembers(req);
     });
 
     handlers["get_group_info"] = protectedHandler([this](const nlohmann::json& req) {
-        return groupCtrl.getGroupInfo(req);
+        return this->groupCtrl.getGroupInfo(req);
     });
 }
 

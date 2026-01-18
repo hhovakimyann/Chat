@@ -19,7 +19,7 @@ public:
     void markOnline(const std::string& username, int socket) override;
     void markOffline(const std::string& username) override;
     bool isOnline(const std::string& username) override;
-    int  getUserSocket(const std::string& username) override;
+    int getUserSocket(const std::string& username) override;
     void publishMessage(const std::string& channel, const std::string& message) override;
     void subscribeToChannel(const std::string& channel,std::function<void(const std::string&)> callback) override;
 };

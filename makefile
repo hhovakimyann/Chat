@@ -15,6 +15,7 @@ SODIUM_LIBS = -L/opt/homebrew/lib -lsodium
 MYSQL_LIBS = -L/opt/homebrew/lib -lmysqlclient
 SSL_LIBS = -L/opt/homebrew/lib -lssl -lcrypto
 LIBRARY_PATHS = -L/usr/local/lib -L/opt/homebrew/lib
+LDFLAGS = -Wl,-rpath,/opt/homebrew/lib
 
 # MySQL include path
 MYSQL_INCLUDE = -I/opt/homebrew/include/mysql -I/usr/local/include/mysql -I/usr/local/mysql/include
@@ -34,7 +35,8 @@ SERVER_SRCS = \
 	server/server.cpp \
 	server/serverMain.cpp \
 	config/env_loader.cpp \
-	server/notifier/notificationManager.cpp 
+	server/notifier/notificationManager.cpp \
+	server/notifier/redis/RedisPresnecePubSub.cpp
 
 
 
@@ -95,7 +97,7 @@ CLIENT_INCLUDES = -I. \
 	$(JSON_INCLUDE)
 
 # Library paths
-SERVER_LIBS = $(LIBRARY_PATHS) $(SODIUM_LIBS) $(MYSQL_LIBS) $(SSL_LIBS) -lpthread
+SERVER_LIBS = $(LIBRARY_PATHS) $(SODIUM_LIBS) $(MYSQL_LIBS) $(SSL_LIBS) -lpthread -lredis++ -lhiredis -Wl,-rpath,/usr/local/lib
 CLIENT_LIBS = $(LIBRARY_PATHS) $(SODIUM_LIBS) $(SSL_LIBS)
 
 # Default target

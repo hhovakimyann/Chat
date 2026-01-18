@@ -1,5 +1,6 @@
 #include "notificationManager.hpp"
 #include <sys/socket.h>
+#include <iostream>
 
 RealTimeManager RealTimeManager::instance;
 
@@ -8,7 +9,9 @@ void RealTimeManager::setPresence(std::unique_ptr<IPresencePubSub> p ) {
 }
 
 void RealTimeManager::markOnline(const std::string& username, int socket) {
+    std::cout << "Try to make online" << std::endl;
     presence->markOnline(username,socket);
+    std::cout << "Done Redis call" << std::endl;
     socketToUser[socket] = username;
 }
 

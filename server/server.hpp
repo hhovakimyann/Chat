@@ -1,11 +1,12 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <poll.h>
-#include <map>
+#include <thread>
+#include <vector>
+#include <mutex>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "utils/threadPool/threadPool.hpp"
+#include <string>
 
 class RequestRouter;
 
@@ -13,13 +14,10 @@ class Server {
 private:
     int server_fd;
     sockaddr_in address {};
+    std::vector<std::thread> clientThreads;
     std::mutex mtx;
     std::atomic<bool> serverRunning{true};
     RequestRouter& router;
-    
-    ThreadPool threadPool;
-    std::vector<struct pollfd> poll_fds;
-    std::map<int, std::string> clientBuffers;
 
 public:
     Server(RequestRouter &r);
@@ -30,7 +28,7 @@ public:
     bool isRunning() const;
 
 private:
-   void handleRequest(int client_socket, std::string request);
+    void handleClient(int client_socket);
 };
 
 #endif // SERVER_HPP
